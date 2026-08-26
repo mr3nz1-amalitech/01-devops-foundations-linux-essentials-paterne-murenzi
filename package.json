@@ -1,0 +1,13 @@
+{
+  "name": "kente-retail-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kente Retail order-service (sandbox starter for the DevOps Foundations lab)",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
