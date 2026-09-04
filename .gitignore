@@ -1,2 +1,10 @@
 node_modules/
 *.log
+
+# Environment files with secrets — only the .env.example template is tracked
+.env
+.env.*
+!.env.example
+
+# Local audit scratch; keep the committed evidence transcripts
+evidence/*.tmp

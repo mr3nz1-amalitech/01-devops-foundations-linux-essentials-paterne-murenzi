@@ -1,0 +1,18 @@
+[Unit]
+Description=Run the Kente Retail health probe every 2 minutes
+Documentation=file:///opt/kente-retail/app/docs/VALUE_ADD_PROPOSAL.md
+
+[Timer]
+# First run 1 min after boot, so a failed boot is caught quickly.
+OnBootSec=1min
+OnUnitActiveSec=2min
+# Randomise so a fleet of these does not stampede the service in lockstep.
+RandomizedDelaySec=15s
+# Run a missed probe immediately after the machine wakes, rather than waiting
+# for the next slot.
+Persistent=true
+AccuracySec=10s
+Unit=kente-health.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,5 @@
+# The hooks and audit scripts are run on Linux; CRLF would break the shebang.
+hooks/* text eol=lf
+*.sh text eol=lf
+*.service text eol=lf
+*.timer text eol=lf

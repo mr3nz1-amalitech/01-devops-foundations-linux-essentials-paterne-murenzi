@@ -1,0 +1,44 @@
+#!/bin/sh
+# Block commits that would leak a secret.
+#
+# Enable: git config core.hooksPath hooks   (npm install does this)
+# Bypass: git commit --no-verify            (justify it in the PR)
+set -eu
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+[ -n "$staged" ] || exit 0
+
+# 1. Secret-shaped filenames. A .pem is a secret whatever is inside it.
+bad=$(printf '%s\n' "$staged" \
+  | grep -E '(^|/)(\.env(\..+)?|.*\.(pem|key|p12|pfx)|id_rsa|id_ed25519|.*credentials.*)$' \
+  | grep -vE '\.(example|sample|template)$' || true)
+if [ -n "$bad" ]; then
+  echo "Commit blocked: secret-shaped paths staged:" >&2
+  printf '%s\n' "$bad" | sed 's/^/  /' >&2
+  echo "Unstage with: git restore --staged <file>, and add it to .gitignore." >&2
+  exit 1
+fi
+
+# 2. Secret-shaped content in the staged version only.
+RE='AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{36}|xox[baprs]-[A-Za-z0-9-]{10,}|aws_secret_access_key[[:space:]]*=[[:space:]]*[A-Za-z0-9/+=]{40}'
+
+found=$(
+  for f in $staged; do
+    # These files must contain the patterns by definition.
+    case "$f" in hooks/pre-commit|scripts/scan-secrets.sh|docs/*) continue ;; esac
+    body=$(git show ":$f" 2>/dev/null) || continue
+    # Report the line number, never the secret — hook output lands in CI logs.
+    lines=$(printf '%s' "$body" | grep -nIE "$RE" 2>/dev/null | cut -d: -f1 | tr '\n' ' ') || true
+    if [ -n "$lines" ]; then echo "$f: line(s) $lines"; fi
+  done
+  true
+)
+
+if [ -n "$found" ]; then
+  echo "Commit blocked: staged content matches known credential formats" >&2
+  printf '%s\n' "$found" | sed 's/^/  /' >&2
+  echo "Move it to an environment variable. If it was ever pushed, ROTATE it." >&2
+  exit 1
+fi
+
+exit 0

@@ -1,0 +1,20 @@
+[Unit]
+Description=Kente Retail order-service health probe
+Documentation=file:///opt/kente-retail/app/docs/VALUE_ADD_PROPOSAL.md
+# Do not probe before the thing being probed exists.
+After=network-online.target kente-retail.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# --restart makes this self-healing; drop the flag to make it alert-only.
+ExecStart=/opt/kente-retail/app/scripts/health-check.sh --restart --unit kente-retail
+User=root
+# The probe reads nothing and writes nothing outside the journal.
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
+# Journal only — no extra log file to rotate.
+StandardOutput=journal
+StandardError=journal
